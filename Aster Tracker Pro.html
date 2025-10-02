@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Hyperion</title>
+    <style>
+        :root {
+            --color-background: #f5f5f7; --color-card-background: #ffffff; --color-text: #1d1d1f;
+            --color-sub-text: #6e6e73; --color-primary: #007AFF; --color-accent-gradient: linear-gradient(135deg, #007AFF, #5AC8FA);
+            --color-border: #d2d2d7; --color-input-bg: #f0f0f2; --color-progress-bg: #e5e5ea;
+            --color-success: #34C759; --color-danger: #FF3B30; --color-warning: #FF9500;
+            --shadow-card: 0 4px_12px rgba(0, 0, 0, 0.08); --border-radius-large: 18px; --border-radius-medium: 12px;
+            --font-family-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --transition-speed: 0.25s ease-out;
+        }
+        body.dark-mode {
+            --color-background: #000000; --color-card-background: #1c1c1e; --color-text: #f5f5f7;
+            --color-sub-text: #8d8d92; --color-border: #38383a; --color-input-bg: #2c2c2e;
+            --color-progress-bg: #3a3a3c; --shadow-card: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        body { font-family: var(--font-family-system); background-color: var(--color-background); color: var(--color-text); margin: 0; padding: 20px; transition: all var(--transition-speed); -webkit-font-smoothing: antialiased; line-height: 1.5; }
+        .container { width: 100%; max-width: 1200px; margin: 0 auto; box-sizing: border-box; padding: 0 20px; }
+        #app-header { position: sticky; top: 0; z-index: 10; transition: all var(--transition-speed); }
+        .status-bar { background-color: var(--color-primary); color: white; text-align: center; padding: 8px; font-weight: 500; border-radius: 0 0 var(--border-radius-medium) var(--border-radius-medium); margin-bottom: 20px; animation: fadeInDown 0.5s; }
+        @keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        header h1 { margin: 0; font-size: 44px; font-weight: 700; letter-spacing: -0.02em; }
+        header p { margin-top: 8px; font-size: 18px; color: var(--color-sub-text); }
+        .card { background-color: var(--color-card-background); border-radius: var(--border-radius-large); box-shadow: var(--shadow-card); padding: 30px; margin-bottom: 30px; transition: background-color var(--transition-speed); }
+        .card-header { font-size: 24px; font-weight: 600; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid var(--color-border); }
+        .input-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .input-group { display: flex; flex-direction: column; }
+        .input-group label { margin-bottom: 8px; font-weight: 500; font-size: 15px; color: var(--color-sub-text); }
+        .input-group input, .display-field { padding: 12px 15px; border-radius: var(--border-radius-medium); border: 1px solid var(--color-border); font-size: 16px; font-family: var(--font-family-system); width: 100%; box-sizing: border-box; background-color: var(--color-input-bg); color: var(--color-text); transition: all 0.2s; -webkit-appearance: none; }
+        .display-field { background-color: transparent; border-color: transparent; }
+        .input-group input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2); background-color: var(--color-card-background); }
+        .actions-toolbar { display: flex; gap: 15px; margin-top: 30px; flex-wrap: wrap; justify-content: space-between; }
+        .actions-toolbar .left-actions, .actions-toolbar .right-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+        button, .history-button { padding: 10px 18px; border: none; border-radius: var(--border-radius-medium); font-weight: 500; font-size: 15px; cursor: pointer; transition: all 0.2s ease-out; -webkit-appearance: none; }
+        .btn-secondary, .history-button { background-color: var(--color-input-bg); color: var(--color-text); }
+        .history-button.active { background-color: var(--color-primary); color: white; }
+        .btn-primary { background-color: var(--color-primary); color: white; }
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; text-align: center; margin-bottom: 30px; }
+        .result-item { background-color: var(--color-card-background); padding: 25px; border-radius: var(--border-radius-large); box-shadow: var(--shadow-card); transition: background-color var(--transition-speed); }
+        .result-item h3 { margin: 0 0 8px 0; font-size: 16px; font-weight: 500; color: var(--color-sub-text); }
+        .result-item p { margin: 0; font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+        .metric-comparison { font-size: 14px; font-weight: 500; margin-top: 5px; }
+        .metric-comparison.positive { color: var(--color-success); }
+        .metric-comparison.negative { color: var(--color-danger); }
+        .wallets-grid { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        .wallet-card .wallet-inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .wallet-card-metrics { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; margin-top:15px; text-align: center; }
+        .metric-item { background-color: var(--color-input-bg); padding: 10px; border-radius: var(--border-radius-medium); }
+        .metric-item h4 { margin: 0 0 5px 0; font-size: 13px; font-weight: 500; color: var(--color-sub-text); }
+        .metric-item p { margin: 0; font-size: 18px; font-weight: 600; }
+        .progress-bar-container { width: 100%; height: 8px; background-color: var(--color-progress-bg); border-radius: 4px; overflow: hidden; }
+        .progress-bar { height: 100%; width: 0; background: var(--color-accent-gradient); border-radius: 4px; transition: width 0.6s cubic-bezier(0.23, 1, 0.32, 1); }
+        .progress-label { display: flex; justify-content: space-between; font-size: 13px; font-weight: 400; margin-top: 8px; color: var(--color-sub-text); }
+        #history-buttons { display: flex; flex-wrap: wrap; gap: 10px; }
+        .modal { position: fixed; z-index: 100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); display: none; align-items: center; justify-content: center; }
+        .modal-content { background-color: var(--color-card-background); padding: 30px; border-radius: var(--border-radius-large); width: 90%; max-width: 600px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); animation: zoomIn 0.3s; }
+        .modal-content textarea { width: 100%; min-height: 150px; background-color: var(--color-input-bg); color: var(--color-text); border: 1px solid var(--color-border); border-radius: var(--border-radius-medium); padding: 15px; font-size: 16px; }
+        @keyframes zoomIn { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .close-button { font-size: 28px; font-weight: bold; color: var(--color-sub-text); cursor: pointer; }
+        #file-importer { display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app-header"></div>
+        <header>
+            <h1>Project Hyperion</h1>
+            <p>洞察 · 竞争 · 超越</p>
+        </header>
+
+        <section class="card">
+            <h2 class="card-header">全局设置</h2>
+            <div class="input-grid">
+                <div class="input-group"><label>今日日期</label><div id="today-date-display" class="display-field"></div></div>
+                <div class="input-group"><label>活动截止日期</label><input type="date" id="end-date"></div>
+                <div class="input-group"><label>钱包总数</label><input type="number" id="wallet-count" value="4" min="1"></div>
+            </div>
+            <div class="actions-toolbar">
+                <div class="left-actions">
+                    <button id="import-btn" class="btn-secondary">导入快照</button>
+                    <button id="export-btn" class="btn-secondary">创建安全快照</button>
+                </div>
+                <div class="right-actions"> <button id="dark-mode-toggle" class="btn-secondary">夜间模式</button> </div>
+            </div>
+            <p style="font-size: 12px; color: var(--color-sub-text); margin-top: 20px; text-align: center;">🔒 所有数据均100%存储在您的本地设备上，我们绝不收集或上传任何信息。</p>
+        </section>
+        
+        <div class="results-grid">
+            <div class="result-item"><h3>每日需刷</h3><p id="daily-required-points">--</p></div>
+            <div class="result-item"><h3>总磨损</h3><p id="total-attrition">--</p></div>
+            <div class="result-item"><h3>每万分成本</h3><p id="overall-cost-per-10k">--</p><div class="metric-comparison" id="overall-cost-comparison"></div></div>
+        </div>
+        
+        <div class="card">
+            <h2 class="card-header">社区基准</h2>
+            <div class="input-grid" style="grid-template-columns: 1fr 2fr;">
+                <div class="input-group">
+                    <label for="benchmark-cost">对标成本 ($ / 1万分)</label>
+                    <input type="number" id="benchmark-cost" placeholder="例如: 50">
+                </div>
+                <div class="actions-toolbar" style="margin-top:0; align-self: flex-end;">
+                     <button id="share-btn" class="btn-primary">生成分享摘要</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" id="history-card">
+            <h2 class="card-header">时间机器 (历史数据)</h2>
+            <div id="history-buttons"></div>
+        </div>
+
+        <section class="wallets-grid" id="wallets-grid"></section>
+        <input type="file" id="file-importer" accept=".json">
+
+        <div id="share-modal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 style="margin:0;">复制分享摘要</h2>
+                    <span class="close-button" id="close-modal-btn">&times;</span>
+                </div>
+                <textarea id="share-text" readonly></textarea>
+                 <p style="font-size: 12px; color: var(--color-sub-text); margin-top: 15px;">摘要已生成。请手动复制并粘贴到您的社交媒体。</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const DOMElements = {
+                appHeader: document.getElementById('app-header'), todayDateDisplay: document.getElementById('today-date-display'),
+                endDate: document.getElementById('end-date'), walletCount: document.getElementById('wallet-count'),
+                dailyRequiredPoints: document.getElementById('daily-required-points'), totalAttrition: document.getElementById('total-attrition'),
+                overallCostPer10k: document.getElementById('overall-cost-per-10k'), historyButtons: document.getElementById('history-buttons'),
+                walletsGrid: document.getElementById('wallets-grid'), darkModeToggle: document.getElementById('dark-mode-toggle'),
+                importBtn: document.getElementById('import-btn'), exportBtn: document.getElementById('export-btn'),
+                fileImporter: document.getElementById('file-importer'), benchmarkCost: document.getElementById('benchmark-cost'),
+                overallCostComparison: document.getElementById('overall-cost-comparison'), shareBtn: document.getElementById('share-btn'),
+                shareModal: document.getElementById('share-modal'), closeModalBtn: document.getElementById('close-modal-btn'),
+                shareText: document.getElementById('share-text'),
+            };
+            const DB_KEY = 'asterTrackerDataHyperion';
+            let AppState = { viewMode: 'latest', editingDate: null, fullData: null };
+
+            const getTodayDateString = () => new Date().toLocaleDateString('en-CA');
+            const formatNumber = (num, decimals = 2) => (typeof num !== 'number' || isNaN(num)) ? '0' : num.toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+            
+            const init = () => {
+                AppState.fullData = loadData();
+                const { latest } = AppState.fullData;
+                DOMElements.todayDateDisplay.textContent = getTodayDateString();
+                DOMElements.endDate.value = latest.endDate || '';
+                DOMElements.walletCount.value = latest.walletCount || 4;
+                DOMElements.benchmarkCost.value = latest.benchmarkCost || '';
+                initDarkMode();
+                attachEventListeners();
+                switchToView('latest');
+            };
+
+            const handleDailySnapshot = (data) => {
+                const todayStr = getTodayDateString();
+                const lastUpdateStr = data.meta?.lastUpdate;
+                if (lastUpdateStr && lastUpdateStr !== todayStr && data.history[lastUpdateStr] === undefined) {
+                    data.history[lastUpdateStr] = JSON.parse(JSON.stringify(data.latest));
+                    data.meta.lastUpdate = todayStr;
+                    localStorage.setItem(DB_KEY, JSON.stringify(data));
+                }
+                return data;
+            };
+
+            const generateWalletCards = (count, walletsData = []) => {
+                DOMElements.walletsGrid.innerHTML = '';
+                for (let i = 1; i <= count; i++) {
+                    const data = walletsData[i - 1] || {};
+                    const card = document.createElement('div');
+                    card.className = 'card wallet-card';
+                    card.innerHTML = `
+                        <h3 style="font-size: 20px; margin:0 0 20px 0;">钱包 #${i}</h3>
+                        <div class="wallet-inputs-grid">
+                            <div class="input-group"><label>初始永续</label><input type="number" class="wallet-input" data-field="initialPerp" value="${data.initialPerp || ''}"></div>
+                            <div class="input-group"><label>初始现货</label><input type="number" class="wallet-input" data-field="initialSpot" value="${data.initialSpot || ''}"></div>
+                            <div class="input-group"><label>当前永续</label><input type="number" class="wallet-input" data-field="currentPerp" value="${data.currentPerp || ''}"></div>
+                            <div class="input-group"><label>当前现货</label><input type="number" class="wallet-input" data-field="currentSpot" value="${data.currentSpot || ''}"></div>
+                            <div class="input-group"><label>当前积分</label><input type="number" class="wallet-input" data-field="currentPoints" value="${data.currentPoints || ''}"></div>
+                            <div class="input-group"><label>目标积分</label><input type="number" class="wallet-input" data-field="targetPoints" value="${data.targetPoints || ''}"></div>
+                        </div>
+                        <div class="progress-bar-container"><div class="progress-bar" id="wallet-progress-bar-${i}"></div></div>
+                        <div class="progress-label"><span id="wallet-progress-text-${i}"></span><span id="wallet-progress-percent-${i}"></span></div>
+                        <div class="wallet-card-metrics">
+                            <div class="metric-item"><h4>钱包磨损</h4><p id="wallet-attrition-${i}">$0.00</p></div>
+                            <div class="metric-item"><h4>每万分成本</h4><p id="wallet-cost-per-10k-${i}">$0.00</p><div class="metric-comparison" id="wallet-cost-comparison-${i}"></div></div>
+                        </div>`;
+                    DOMElements.walletsGrid.appendChild(card);
+                }
+                document.querySelectorAll('.wallet-input').forEach(input => input.addEventListener('input', saveData));
+            };
+
+            const updateDashboard = (dataToDisplay) => {
+                let total = { currentPoints: 0, targetPoints: 0, attrition: 0 };
+                const benchmarkCost = parseFloat(DOMElements.benchmarkCost.value) || 0;
+
+                (dataToDisplay.wallets || []).forEach((wallet, i) => {
+                    const initialCapital = (wallet.initialPerp || 0) + (wallet.initialSpot || 0);
+                    const currentCapital = (wallet.currentPerp || 0) + (wallet.currentSpot || 0);
+                    const attrition = initialCapital - currentCapital;
+                    const costPer10k = wallet.currentPoints > 0 ? (attrition / wallet.currentPoints) * 10000 : 0;
+                    
+                    total.currentPoints += wallet.currentPoints || 0;
+                    total.targetPoints += wallet.targetPoints || 0;
+                    total.attrition += attrition;
+
+                    const percent = wallet.targetPoints > 0 ? ((wallet.currentPoints || 0) / wallet.targetPoints) * 100 : 0;
+                    const progressBar = document.getElementById(`wallet-progress-bar-${i+1}`);
+                    if(progressBar) {
+                        progressBar.style.width = `${Math.min(100, percent)}%`;
+                        document.getElementById(`wallet-progress-text-${i+1}`).textContent = `${formatNumber(wallet.currentPoints || 0, 0)} / ${formatNumber(wallet.targetPoints || 0, 0)}`;
+                        document.getElementById(`wallet-progress-percent-${i+1}`).textContent = `${percent.toFixed(2)}%`;
+                        document.getElementById(`wallet-attrition-${i+1}`).textContent = `$${formatNumber(attrition)}`;
+                        document.getElementById(`wallet-cost-per-10k-${i+1}`).textContent = `$${formatNumber(costPer10k)}`;
+                        updateComparisonText(document.getElementById(`wallet-cost-comparison-${i+1}`), costPer10k, benchmarkCost, true);
+                    }
+                });
+                
+                const overallCostPer10k = total.currentPoints > 0 ? (total.attrition / total.currentPoints) * 10000 : 0;
+                const pointsRemaining = Math.max(0, total.targetPoints - total.currentPoints);
+                const today = new Date(); today.setHours(0, 0, 0, 0);
+                const endDate = dataToDisplay.endDate ? new Date(dataToDisplay.endDate) : null;
+                if (endDate) endDate.setHours(23, 59, 59, 999);
+                const daysRemaining = (endDate && endDate > today) ? Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)) : 0;
+                const dailyRequired = daysRemaining > 0 ? pointsRemaining / daysRemaining : 0;
+                
+                DOMElements.dailyRequiredPoints.textContent = formatNumber(dailyRequired, 0);
+                DOMElements.totalAttrition.textContent = `$${formatNumber(total.attrition)}`;
+                DOMElements.overallCostPer10k.textContent = `$${formatNumber(overallCostPer10k)}`;
+                updateComparisonText(DOMElements.overallCostComparison, overallCostPer10k, benchmarkCost, true);
+            };
+
+            const updateComparisonText = (element, value, benchmark, lowerIsBetter) => {
+                if (benchmark > 0) {
+                    const diff = value - benchmark;
+                    const percentDiff = (diff / benchmark) * 100;
+                    if (lowerIsBetter ? (diff < 0) : (diff > 0)) {
+                        element.className = 'metric-comparison positive';
+                        element.textContent = `优于基准 ${formatNumber(Math.abs(percentDiff), 1)}%`;
+                    } else {
+                        element.className = 'metric-comparison negative';
+                        element.textContent = `落后基准 ${formatNumber(Math.abs(percentDiff), 1)}%`;
+                    }
+                } else {
+                    element.textContent = '';
+                }
+            };
+
+            const saveData = () => {
+                const targetObject = AppState.viewMode === 'latest' ? AppState.fullData.latest : AppState.fullData.history[AppState.editingDate];
+                if (!targetObject) return;
+                targetObject.endDate = DOMElements.endDate.value;
+                targetObject.walletCount = DOMElements.walletCount.value;
+                targetObject.benchmarkCost = DOMElements.benchmarkCost.value;
+                targetObject.wallets = [];
+                document.querySelectorAll('.wallet-card').forEach((card) => {
+                    const walletData = {};
+                    card.querySelectorAll('.wallet-input').forEach(input => {
+                        walletData[input.dataset.field] = input.type === 'number' ? parseFloat(input.value) || 0 : input.value;
+                    });
+                    targetObject.wallets.push(walletData);
+                });
+                if (AppState.viewMode === 'latest') AppState.fullData.meta.lastUpdate = getTodayDateString();
+                localStorage.setItem(DB_KEY, JSON.stringify(AppState.fullData));
+                updateDashboard(targetObject);
+            };
+
+            const loadData = () => {
+                let data = JSON.parse(localStorage.getItem(DB_KEY));
+                if (!data || !data.meta || data.meta.version !== 'Hyperion') {
+                    data = { meta: { version: 'Hyperion', lastUpdate: getTodayDateString() }, latest: { endDate: '', walletCount: 4, wallets: [], benchmarkCost: '' }, history: {} };
+                }
+                return handleDailySnapshot(data);
+            };
+
+            const switchToView = (mode, date = null) => {
+                AppState.viewMode = mode; AppState.editingDate = date;
+                const dataToDisplay = mode === 'latest' ? AppState.fullData.latest : AppState.fullData.history[date];
+                if (!dataToDisplay) { console.error("No data for date:", date); return; }
+                DOMElements.endDate.value = dataToDisplay.endDate || '';
+                DOMElements.walletCount.value = dataToDisplay.walletCount || 4;
+                DOMElements.benchmarkCost.value = dataToDisplay.benchmarkCost || '';
+                generateWalletCards(dataToDisplay.walletCount, dataToDisplay.wallets);
+                updateDashboard(dataToDisplay);
+                renderHistoryButtons(); renderStatusBar();
+            };
+
+            const renderHistoryButtons = () => {
+                DOMElements.historyButtons.innerHTML = '';
+                const returnBtn = document.createElement('button');
+                returnBtn.textContent = '返回今日';
+                returnBtn.className = 'history-button';
+                if (AppState.viewMode === 'latest') returnBtn.classList.add('active');
+                returnBtn.onclick = () => switchToView('latest');
+                DOMElements.historyButtons.appendChild(returnBtn);
+                Object.keys(AppState.fullData.history).sort().reverse().forEach(date => {
+                    const btn = document.createElement('button');
+                    btn.textContent = date;
+                    btn.className = 'history-button';
+                    if (AppState.viewMode === 'history' && AppState.editingDate === date) btn.classList.add('active');
+                    btn.onclick = () => switchToView('history', date);
+                    DOMElements.historyButtons.appendChild(btn);
+                });
+            };
+            
+            const renderStatusBar = () => {
+                DOMElements.appHeader.innerHTML = '';
+                if (AppState.viewMode === 'history') {
+                    const bar = document.createElement('div');
+                    bar.className = 'status-bar';
+                    bar.textContent = `时间机器模式：正在查看/编辑 ${AppState.editingDate} 的数据`;
+                    DOMElements.appHeader.appendChild(bar);
+                }
+            };
+            
+            const initDarkMode = () => {
+                const isDarkMode = JSON.parse(localStorage.getItem('asterDarkMode'));
+                if (isDarkMode) DOMElements.body.classList.add('dark-mode');
+                DOMElements.darkModeToggle.textContent = isDarkMode ? '白天模式' : '夜间模式';
+            };
+            
+            const attachEventListeners = () => {
+                DOMElements.darkModeToggle.addEventListener('click', () => {
+                    DOMElements.body.classList.toggle('dark-mode');
+                    const isNowDark = DOMElements.body.classList.contains('dark-mode');
+                    DOMElements.darkModeToggle.textContent = isNowDark ? '白天模式' : '夜间模式';
+                    localStorage.setItem('asterDarkMode', isNowDark);
+                });
+                DOMElements.exportBtn.addEventListener('click', () => {
+                    saveData();
+                    const dataStr = localStorage.getItem(DB_KEY);
+                    const link = document.createElement('a');
+                    link.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+                    link.download = `hyperion_snapshot_${getTodayDateString()}.json`;
+                    link.click();
+                });
+                DOMElements.importBtn.addEventListener('click', () => DOMElements.fileImporter.click());
+                DOMElements.fileImporter.addEventListener('change', (event) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const importedData = JSON.parse(e.target.result);
+                            if (importedData.meta?.version === 'Hyperion') {
+                                localStorage.setItem(DB_KEY, JSON.stringify(importedData));
+                                location.reload();
+                            } else { alert('导入失败，数据版本不兼容。'); }
+                        } catch (error) { alert('导入失败，文件格式错误。'); }
+                    };
+                    if(event.target.files[0]) reader.readAsText(event.target.files[0]);
+                    DOMElements.fileImporter.value = '';
+                });
+                DOMElements.walletCount.addEventListener('input', (e) => {
+                    const newCount = parseInt(e.target.value, 10) || 1;
+                    const currentData = AppState.viewMode === 'latest' ? AppState.fullData.latest : AppState.fullData.history[AppState.editingDate];
+                    currentData.walletCount = newCount;
+                    while(currentData.wallets.length > newCount) currentData.wallets.pop();
+                    while(currentData.wallets.length < newCount) currentData.wallets.push({});
+                    generateWalletCards(newCount, currentData.wallets);
+                    saveData();
+                });
+                DOMElements.endDate.addEventListener('input', saveData);
+                DOMElements.benchmarkCost.addEventListener('input', saveData);
+                DOMElements.shareBtn.addEventListener('click', () => {
+                    const latestData = AppState.fullData.latest;
+                    let totalPoints = 0, totalTarget = 0, totalAttrition = 0;
+                    latestData.wallets.forEach(w => {
+                        totalPoints += w.currentPoints || 0;
+                        totalTarget += w.targetPoints || 0;
+                        totalAttrition += ((w.initialPerp || 0) + (w.initialSpot || 0)) - ((w.currentPerp || 0) + (w.currentSpot || 0));
+                    });
+                    const progress = totalTarget > 0 ? (totalPoints / totalTarget) * 100 : 0;
+                    const cost = totalPoints > 0 ? (totalAttrition / totalPoints) * 10000 : 0;
+                    const summary = `
+🚀 我的项目作战报告 🚀
+-------------------------
+总进度: ${progress.toFixed(2)}% (${formatNumber(totalPoints,0)} / ${formatNumber(totalTarget,0)} 分)
+总磨损: $${formatNumber(totalAttrition)}
+核心性价比: $${formatNumber(cost)} / 每万分
+-------------------------
+由 Project Hyperion 生成
+                    `;
+                    DOMElements.shareText.value = summary.trim();
+                    DOMElements.shareModal.style.display = 'flex';
+                });
+                DOMElements.closeModalBtn.addEventListener('click', () => DOMElements.shareModal.style.display = 'none');
+                window.addEventListener('click', (e) => { if(e.target == DOMElements.shareModal) DOMElements.shareModal.style.display = 'none'; });
+            };
+
+            init();
+        });
+    </script>
+</body>
+</html>
